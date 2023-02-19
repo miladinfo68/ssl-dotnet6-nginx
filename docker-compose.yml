@@ -1,0 +1,61 @@
+version: '3.7'
+
+services:
+
+  author-api:
+    image: author-api:v1
+    container_name: author-api-v1
+    build:
+      context: .
+      dockerfile: src/AuthorAPI/AuthorAPI.Dockerfile
+    ports:
+      - "5002:80"
+      - "5003:443"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: "https://+;http://+"
+      ASPNETCORE_HTTPS_PORT: "5003"
+      ASPNETCORE_HTTP_PORT: "5002"
+      ASPNETCORE_Kestrel__Certificates__Default__Password: "123456"
+      ASPNETCORE_Kestrel__Certificates__Default__Path: /https/dev.pfx
+    volumes:
+      # - ./src/AuthorAPI/appsettings.json:/app/appsettings.json:ro     
+      - ./src/config/certs:/https:ro
+
+  post-api:
+    image: post-api:v1
+    container_name: post-api-vi
+    build:
+      context: .
+      dockerfile: src/PostAPI/PostAPI.Dockerfile
+    ports:
+      - "6002:80"
+      - "6003:443"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: "https://+;http://+"
+      ASPNETCORE_HTTPS_PORT: "6003"
+      ASPNETCORE_HTTP_PORT: "6002"
+      ASPNETCORE_Kestrel__Certificates__Default__Password: "123456"
+      ASPNETCORE_Kestrel__Certificates__Default__Path: /https/dev.pfx
+    volumes:
+      # - ./src/PostApi/appsettings.json:/app/appsettings.json:ro
+      - ./src/config/certs:/https:ro
+
+  nginx:
+    # image: nginx:latest
+    image: nginx-proxy:v1
+    container_name: nginx-proxy-v1
+    restart: unless-stopped
+    ports:
+      - 80:80
+      - 443:443
+    build:
+          context: .
+          dockerfile: src/config/Nginx.Dockerfile      
+    volumes:
+      - ./src/config/nginx.conf:/etc/nginx/nginx.conf
+      - ./src/config/certs:/etc/ssl/certs  
+    depends_on:
+      - author-api
+      - post-api      
